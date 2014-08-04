@@ -37,9 +37,11 @@
 # Reboot and run as root and it *should* work, more or less
 # TODO - fix or add comments, do some sort of error catching to fail gracefully when compilation
 # breaks, fix sourceforge links (direct to a single mirror currently), fix prompts to specify 
-# versions requirements etc
+# versions requirements etc, maybe convert inittab to upstart to be "Ubuntufied"
+# ALSO TODO BEFORE RELEASE - Avantfax password setting not working right, and need link to Web UI in main
 # NOTES/gotchas - this uses bash instead of sh.  must run as root (not plain sudo unless you sudo -i,
 # and I have not tested that way thoroughly, even though it is more inline with Ubuntu practices)
+# last, for now, have not tested 64-bit or the webmin module to see if it needs hacking
 
 VERSION=`cat /etc/pbx/.version`
 if [ -z "$VERSION" ]
@@ -306,7 +308,7 @@ echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "Incredible FAX with IAXModem/Hylafax/Avantfax installation complete"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo " "
-echo "Avantfax is password-protected. Log in as maint with your passwd-master PW using"
+echo "Avantfax is password-protected. Log in as admin with your passwd-master PW using"
 echo "a browser pointed to http://serverIPaddress/avantfax or use the PIAF Admin GUI."
 echo " "
 echo "Fax detection is NOT supported. Incoming fax support requires a dedicated DID! "
@@ -325,3 +327,4 @@ echo "You must Reboot now to bring Incredible Fax online."
 echo " "
 read -p "Press any key to reboot or ctrl-C to exit"
 reboot
+
