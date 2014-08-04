@@ -29,21 +29,28 @@
 # removed test for Incredible
 # Install Fax
 
-COLOR=`cat /etc/pbx/.color`
-if [ -z "$COLOR" ]
+# josh.north@point808.com
+# 2014-08-04 - based on download from http://incrediblepbx.com/incrediblefax11.sh
+# Modified and validated it installs (mostly) correctly on a fresh Ubuntu Server 14.04LTS 32 bit
+# install with updates, reboot, and IncrediblePBX installed 
+# from http://incrediblepbx.com/incrediblepbx11.4.ubuntu14
+# Reboot and run as root and it *should* work, more or less
+
+VERSION=`cat /etc/pbx/.version`
+if [ -z "$VERSION" ]
 then
- echo "Sorry. This installer requires PBX in a Flash 2.0.6.3.1 or later."
+ echo "Sorry. This installer requires Ubuntu PBX in a Flash and Incredible PBX 11.11."
 fi
-if [ "$COLOR" != "GREEN" ]
+if [ "$VERSION" != "11.11" ]
 then
- echo "Sorry. This installer requires PIAF-Green with CentOS 6.3 or 6.4."
+ echo "Sorry. This installer requires Ubuntu PBX in a Flash and Incredible PBX 11.11."
 fi
 
 clear
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo "This script installs Hylafax/Avantfax/IAXmodem on PIAF-Green systems only!"
+echo "This script installs Hylafax/Avantfax/IAXmodem on Ubuntu PIAF systems only!"
 echo " "
 echo "You first will need to enter the email address for delivery of incoming faxes." 
 echo " "
@@ -63,55 +70,29 @@ clear
 #Change passw0rd below for your MySQL asteriskuser password if you have changed it from the default.
 MYSQLASTERISKUSERPASSWORD=amp109
 
-
 LOAD_LOC=/usr/src/
 
 cd $LOAD_LOC
 
-# install some dependencies
-yum -y install ghostscript ghostscript-fonts sharutils perl-CGI
+# upgrade first then install some dependencies
+apt-get update && apt-get upgrade -y
+apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice
 
 #Install Hylafax first so that the directories are in place
-#processor=`uname -i`
-#centos=${processor:1:3}
-#if [ $centos != 386 ]
-#then
-# wget ftp://ftp.pbone.net/mirror/ftp.sourceforge.net/pub/sourceforge/h/hy/hylafax/hylafax%20CentOS%205%20RPM/hylafax-5.4.3-1.x86_64.rpm
-# rpm -Uvh $LOAD_LOC/hylafax-5.4.3-1.x86_64.rpm
-#else
-# wget ftp://ftp.pbone.net/mirror/ftp.sourceforge.net/pub/sourceforge/h/hy/hylafax/hylafax%20CentOS%205%20RPM/hylafax-5.5.0-1.i386.rpm
-# rpm -Uvh $LOAD_LOC/hylafax-5.5.0-1.i386.rpm
-#fi
-
-# updated to hylafax+ to remove future problems if orig HylaFax is someday released for CentOS 6.x
-if [ $centos != 386 ]
-then
- yum -y install hylafax*
- mv /etc/init.d/hylafax+ /etc/init.d/hylafax
-else
- yum -y install hylafax
-fi
-chkconfig --add hylafax
-chkconfig --add hylafax+
-chkconfig hylafax on
-chkconfig hylafax+ on
-
-wget http://sourceforge.net/projects/iaxmodem/files/iaxmodem/iaxmodem-1.2.0/iaxmodem-1.2.0.tar.gz
-wget http://garr.dl.sourceforge.net/project/avantfax/avantfax-3.3.3.tgz
-
-
-#INstall IAXMODEMS 0->3
-
-cd /usr/src
-tar zxfv $LOAD_LOC/iaxmodem-1.2.0.tar.gz
-cd iaxmodem-1.2.0
-./configure
+mkdir /etc/hylafax
+wget http://prdownloads.sourceforge.net/hylafax/hylafax-5.5.5.tar.gz
+tar -zxvf hylafax*
+cd hylafax*
+./configure --nointeractive
 make
-mkdir /etc/iaxmodem/
+make install
+cp hfaxd/hfaxd.conf /etc/hylafax/
+cp util/pagesizes /etc/hylafax/
 
-mkdir /var/log/iaxmodem
+#Install IAXMODEMS 0->3
+apt-get install -y iaxmodem
 touch /var/log/iaxmodem/iaxmodem.log
-
+cd $LOAD_LOC
 COUNT=0
 while [ $COUNT -lt 4 ]; do
        echo "Number = $COUNT"
@@ -147,40 +128,17 @@ permit=127.0.0.1/255.255.255.0
 " >> /etc/asterisk/iax_custom.conf
 
 #Setup Hylafax Modems
-cp /usr/src/iaxmodem-1.2.0/config.ttyIAX /var/spool/hylafax/etc/config.ttyIAX$COUNT
+cp /usr/share/doc/iaxmodem/examples/config.ttyIAX /var/spool/hylafax/etc/config.ttyIAX$COUNT
 
 echo "
-t$COUNT:23:respawn:/usr/sbin/faxgetty ttyIAX$COUNT > /var/log/iaxmodem/iaxmodem.log
+t$COUNT:23:respawn:/usr/local/sbin/faxgetty ttyIAX$COUNT > /var/log/iaxmodem/iaxmodem.log
 " >> /etc/inittab
-
 
 COUNT=$((COUNT + 1))
 done
 
 chown -R uucp:uucp /etc/iaxmodem/
 chown uucp:uucp /var/spool/hylafax/etc/config.ttyIAX*
-
-
-touch /etc/logrotate.d/iaxmodem
-echo "
-/var/log/iaxmodem/*.log {
-    notifempty
-    missingok
-    postrotate
-        /bin/kill -HUP `cat /var/run/iaxmodem.pid` || true
-    endscript
-}
-" > /etc/logrotate.d/iaxmodem
-
-
-cp iaxmodem /usr/sbin/iaxmodem
-cp iaxmodem.init.fedora /etc/rc.d/init.d/iaxmodem
-sed -i 's/\/usr\/local\/sbin\/iaxmodem/\/usr\/sbin\/iaxmodem/g'  /etc/rc.d/init.d/iaxmodem
-chmod 0755 /etc/rc.d/init.d/iaxmodem
-chkconfig --add iaxmodem
-chkconfig iaxmodem on
-/etc/init.d/iaxmodem start
-
 
 #Configure Hylafax
 touch /var/spool/hylafax/etc/FaxDispatch
