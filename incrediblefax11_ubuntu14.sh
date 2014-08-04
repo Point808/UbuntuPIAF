@@ -209,6 +209,10 @@ sed -i 's/INSTDIR=\/var\/www\/avantfax/INSTDIR=\/var\/www\/html\/avantfax/g'  $L
 sed -i 's|./debian-prefs.txt|/usr/src/avantfax-3.3.3/debian-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
+##JN this is a really NASTY NASTY workaround but there is a known bug to fix https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
+pear upgrade
+gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
+pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
 
 ./debian-install.sh
 
