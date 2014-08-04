@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
 #       the Free Software Foundation; either version 2 of the License, or
@@ -35,6 +35,11 @@
 # install with updates, reboot, and IncrediblePBX installed 
 # from http://incrediblepbx.com/incrediblepbx11.4.ubuntu14
 # Reboot and run as root and it *should* work, more or less
+# TODO - fix or add comments, do some sort of error catching to fail gracefully when compilation
+# breaks, fix sourceforge links (direct to a single mirror currently), fix prompts to specify 
+# versions requirements etc
+# NOTES/gotchas - this uses bash instead of sh.  must run as root (not plain sudo unless you sudo -i,
+# and I have not tested that way thoroughly, even though it is more inline with Ubuntu practices)
 
 VERSION=`cat /etc/pbx/.version`
 if [ -z "$VERSION" ]
@@ -185,66 +190,35 @@ echo "you can safely accept every default by pressing Enter."
 read -p "Press the Enter key to begin..."
 clear
 
-wget http://incrediblepbx.com/fax/php-pear-Mail-Mime-1.4.0-1.el5.noarch.rpm
-wget http://incrediblepbx.com/fax/php-pear-Net-Socket-1.0.10-1.el5.noarch.rpm
-wget http://incrediblepbx.com/fax/php-pear-Auth-SASL-1.0.4-1.el5.noarch.rpm
-wget http://incrediblepbx.com/fax/php-pear-Net-SMTP-1.4.4-1.el5.noarch.rpm
-wget http://incrediblepbx.com/fax/php-pear-Mail-1.1.14-5.el5.1.noarch.rpm
-wget http://incrediblepbx.com/fax/php-pear-MDB2-2.4.1-2.el5.noarch.rpm
-wget http://incrediblepbx.com/fax/php-pear-MDB2-Driver-mysql-1.4.1-3.el5.noarch.rpm
-
-rpm -ivh php-pear-Mail-Mime-1.4.0-1.el5.noarch.rpm
-rpm -ivh php-pear-Net-Socket-1.0.10-1.el5.noarch.rpm
-rpm -ivh php-pear-Auth-SASL-1.0.4-1.el5.noarch.rpm
-rpm -ivh php-pear-Net-SMTP-1.4.4-1.el5.noarch.rpm
-rpm -ivh php-pear-Mail-1.1.14-5.el5.1.noarch.rpm
-rpm -ivh php-pear-MDB2-2.4.1-2.el5.noarch.rpm
-rpm -ivh php-pear-MDB2-Driver-mysql-1.4.1-3.el5.noarch.rpm
-
-yum -y update php-pear-Net-Socket
-yum -y update php-pear-Auth-SASL
+apt-get -y install php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql gsfonts-x11 gsfonts-other fonts-freefont-ttf fonts-liberation xfonts-scalable fonts-freefont-otf t1-cyrillic cups-filters
+mkdir /usr/local/lib/ghostscript
+ln -s /usr/share/fonts/type1 /usr/local/lib/ghostscript/fonts
 
 faxsetup
 
 #Install Avantfax
 cd $LOAD_LOC
+wget http://downloads.sourceforge.net/project/avantfax/avantfax-3.3.3.tgz
 tar zxfv $LOAD_LOC/avantfax*.tgz
 cd avantfax-3.3.3
 # Some sed commands to set the preferences
-sed -i 's/ROOTMYSQLPWD=/ROOTMYSQLPWD=passw0rd/g'  $LOAD_LOC/avantfax-3.3.3/rh-prefs.txt
-sed -i 's/apache/asterisk/g'  $LOAD_LOC/avantfax-3.3.3/rh-prefs.txt
-sed -i 's/fax.mydomain.com/pbx.local/g'  $LOAD_LOC/avantfax-3.3.3/rh-prefs.txt
-sed -i 's/INSTDIR=\/var\/www\/avantfax/INSTDIR=\/var\/www\/html\/avantfax/g'  $LOAD_LOC/avantfax-3.3.3/rh-prefs.txt
+sed -i 's/ROOTMYSQLPWD=/ROOTMYSQLPWD=passw0rd/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
+sed -i 's/www-data/asterisk/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
+sed -i 's/fax.mydomain.com/pbx.local/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
+sed -i 's/INSTDIR=\/var\/www\/avantfax/INSTDIR=\/var\/www\/html\/avantfax/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
+sed -i 's|./debian-prefs.txt|/usr/src/avantfax-3.3.3/debian-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
+sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
-sed -i 's|rh-prefs.txt|/usr/src/avantfax-3.3.3/rh-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/rh-install.sh
 
-./rh-install.sh
+./debian-install.sh
 
-rm -rf /etc/httpd/conf.d/avantfax.conf
-
-# Add a menu item to kennonsoft interface
-#copy in the picture
-cd $LOAD_LOC
-wget http://incrediblepbx.com/ico_fax.png
-mv $LOAD_LOC/ico_fax.png /var/www/html/welcome/ico_fax.png
-sed -i '/asteridex/ i\1,Fax,./avantfax,Avantfax,ico_fax.png' /var/www/html/welcome/.htindex.cfg
-
-chown -R asterisk:asterisk /var/lib/php/session/
-
-cd /etc/pbx/httpdconf
-wget http://incrediblepbx.com/reminders.conf
-cp reminders.conf avantfax.conf
-sed -i 's|reminders|avantfax|g' avantfax.conf
-chmod 744 *
-
-service httpd restart
+service apache2 restart
 
 asterisk -rx "module reload"
 
-
 mysql -uroot -ppassw0rd avantfax <<EOF
 use avantfax;
-update UserAccount set username="maint" where uid=1;
+update UserAccount set username="admin" where uid=1;
 update UserAccount set can_del=1 where uid=1;
 update UserAccount set wasreset=1 where uid=1;
 update UserAccount set acc_enabled=1 where uid=1;
@@ -265,7 +239,7 @@ asterisk -rx "dialplan reload"
 cd $LOAD_LOC
 wget http://incrediblepbx.com/hylafax_mod-1.8.2.wbm.gz
 
-cd /usr/share/ghostscript/8.70/Resource/Init
+cd /usr/share/ghostscript/current/Resource/Init
 mv Fontmap.GS Fontmap.GS.orig
 wget http://incrediblepbx.com/Fontmap.GS
 
@@ -308,13 +282,14 @@ chmod 555 /
 # needed for WebMin module
 perl -MCPAN -e 'install CGI'
 
-echo "/usr/sbin/faxgetty -D ttyIAX0" >> /etc/rc.d/rc.local
-echo "/usr/sbin/faxgetty -D ttyIAX1" >> /etc/rc.d/rc.local
-echo "/usr/sbin/faxgetty -D ttyIAX2" >> /etc/rc.d/rc.local
-echo "/usr/sbin/faxgetty -D ttyIAX3" >> /etc/rc.d/rc.local
+sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX0' /etc/rc.local
+sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX1' /etc/rc.local
+sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX2' /etc/rc.local
+sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX3' /etc/rc.local
 
 # needed for /etc/cron.hourly/hylafax+
-cd /etc/sysconfig
+##JN is this the right place? what's this doing?
+cd /etc/default
 wget http://incrediblepbx.com/hylafax+
 chmod 755 hylafax+
 
