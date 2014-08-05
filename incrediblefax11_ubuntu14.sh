@@ -84,7 +84,7 @@ LOAD_LOC=/usr/src/
 export ADMIN_PASS=passw0rd
 DEBCONFPASSWORD=`awk '/^password/ { if (NR<7) print $3;}' /etc/mysql/debian.cnf`
 mysql -u root -p${ADMIN_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '${DEBCONFPASSWORD}';"
-mysql -u root -p${ADMIN_PASS} -e "flush privileges;"
+mysql -u root -p${ADMIN_PASS} -e "FLUSH PRIVILEGES;"
 sleep 5
 killall mysqld
 sleep 10
@@ -99,15 +99,16 @@ apt-get update && apt-get upgrade -y
 apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice
 
 #Install Hylafax first so that the directories are in place
-mkdir /etc/hylafax
+mkdir /var/spool/hylafax/etc/
+ln -s /var/spool/hylafax/etc/ /etc/hylafax
 wget http://prdownloads.sourceforge.net/hylafax/hylafax-5.5.5.tar.gz
 tar -zxvf hylafax*
 cd hylafax*
 ./configure --nointeractive
 make
 make install
-cp hfaxd/hfaxd.conf /etc/hylafax/
-cp util/pagesizes /etc/hylafax/
+cp hfaxd/hfaxd.conf /var/spool/hylafax/etc/
+cp util/pagesizes /var/spool/hylafax/etc/
 
 #Install IAXMODEMS 0->3
 apt-get install -y iaxmodem
@@ -230,13 +231,9 @@ pear upgrade
 gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
 pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
 
-#also we need to link modem configs to hyla default dir
-ln -s /var/spool/hylafax/etc/config.ttyIAX0 /etc/hylafax/
-ln -s /var/spool/hylafax/etc/config.ttyIAX1 /etc/hylafax/
-ln -s /var/spool/hylafax/etc/config.ttyIAX2 /etc/hylafax/
-ln -s /var/spool/hylafax/etc/config.ttyIAX3 /etc/hylafax/
-
 ./debian-install.sh
+
+rm /etc/apache2/sites-enabled/000-default
 
 service apache2 restart
 
