@@ -221,6 +221,7 @@ sed -i 's/ROOTMYSQLPWD=/ROOTMYSQLPWD=passw0rd/g'  $LOAD_LOC/avantfax-3.3.3/debia
 sed -i 's/www-data/asterisk/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's/fax.mydomain.com/pbx.local/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's/INSTDIR=\/var\/www\/avantfax/INSTDIR=\/var\/www\/html\/avantfax/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
+sed -i 's/HYLADIR=\/usr/INSTDIR=\/usr\/local/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's|./debian-prefs.txt|/usr/src/avantfax-3.3.3/debian-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
@@ -228,6 +229,12 @@ sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-inst
 pear upgrade
 gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
 pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
+
+#also we need to link modem configs to hyla default dir
+ln -s /var/spool/hylafax/etc/config.ttyIAX0 /etc/hylafax/
+ln -s /var/spool/hylafax/etc/config.ttyIAX1 /etc/hylafax/
+ln -s /var/spool/hylafax/etc/config.ttyIAX2 /etc/hylafax/
+ln -s /var/spool/hylafax/etc/config.ttyIAX3 /etc/hylafax/
 
 ./debian-install.sh
 
