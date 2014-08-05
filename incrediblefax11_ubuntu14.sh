@@ -85,8 +85,11 @@ export ADMIN_PASS=passw0rd
 DEBCONFPASSWORD=`awk '/^password/ { if (NR<7) print $3;}' /etc/mysql/debian.cnf`
 mysql -u root -p${ADMIN_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '${DEBCONFPASSWORD}';"
 mysql -u root -p${ADMIN_PASS} -e "flush privileges;"
+sleep 5
 killall mysqld
-service mysql start
+sleep 10
+/etc/init.d/mysql start
+
 
 #ok let's go
 cd $LOAD_LOC
