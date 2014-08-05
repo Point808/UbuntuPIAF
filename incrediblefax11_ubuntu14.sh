@@ -79,6 +79,16 @@ MYSQLASTERISKUSERPASSWORD=amp109
 
 LOAD_LOC=/usr/src/
 
+# Before we go any further lets fix the debian-sys-maint password problem with ubuntu incrediblepbx.  this bug prevents
+# reboots and clean shutdowns without manual intervention
+export ADMIN_PASS=passw0rd
+DEBCONFPASSWORD=`awk '/^password/ { if (NR<7) print $3;}' /etc/mysql/debian.cnf`
+mysql -u root -p${ADMIN_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '${DEBCONFPASSWORD}';"
+mysql -u root -p${ADMIN_PASS} -e "flush privileges;"
+killall mysqld
+service mysql start
+
+#ok let's go
 cd $LOAD_LOC
 
 # upgrade first then install some dependencies
@@ -292,6 +302,10 @@ sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX0' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX1' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX2' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX3' /etc/rc.local
+
+#use avantfax faxrcvd program instead of hylafax
+mv /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd_old
+mv /var/spool/hylafax/bin/faxrcvd.php /var/spool/hylafax/bin/faxrcvd
 
 # needed for /etc/cron.hourly/hylafax+
 ##JN is this the right place? what's this doing?
