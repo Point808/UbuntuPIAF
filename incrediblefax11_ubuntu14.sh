@@ -79,19 +79,6 @@ MYSQLASTERISKUSERPASSWORD=amp109
 
 LOAD_LOC=/usr/src/
 
-# Before we go any further lets fix the debian-sys-maint password problem with ubuntu incrediblepbx.  this bug prevents
-# reboots and clean shutdowns without manual intervention
-export ADMIN_PASS=passw0rd
-DEBCONFPASSWORD=`awk '/^password/ { if (NR<7) print $3;}' /etc/mysql/debian.cnf`
-mysql -u root -p${ADMIN_PASS} -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '${DEBCONFPASSWORD}';"
-mysql -u root -p${ADMIN_PASS} -e "FLUSH PRIVILEGES;"
-sleep 5
-killall mysqld
-sleep 10
-/etc/init.d/mysql start
-
-
-#ok let's go
 cd $LOAD_LOC
 
 # upgrade first then install some dependencies
