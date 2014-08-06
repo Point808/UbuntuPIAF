@@ -86,7 +86,7 @@ apt-get update && apt-get upgrade -y
 apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice
 
 #Install Hylafax first so that the directories are in place
-mkdir /var/spool/hylafax/etc/
+mkdir -p /var/spool/hylafax/etc/
 ln -s /var/spool/hylafax/etc/ /etc/hylafax
 wget http://prdownloads.sourceforge.net/hylafax/hylafax-5.5.5.tar.gz
 tar -zxvf hylafax*
@@ -96,6 +96,7 @@ make
 make install
 cp hfaxd/hfaxd.conf /var/spool/hylafax/etc/
 cp util/pagesizes /var/spool/hylafax/etc/
+cp etc/hosts.hfaxd /var/spool/hylafax/etc/
 
 #Install IAXMODEMS 0->3
 apt-get install -y iaxmodem
@@ -213,6 +214,10 @@ sed -i 's/HYLADIR=\/usr/HYLADIR=\/usr\/local/g'  $LOAD_LOC/avantfax-3.3.3/debian
 sed -i 's|./debian-prefs.txt|/usr/src/avantfax-3.3.3/debian-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
+# Avantfax guys let the debian-install script slide or something, awk to find config file is jacked, let's fix
+# thank God it's the only instance of 6 in the file, my sed sucks
+sed -i 's/6/4/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
+
 ##JN this is a really NASTY NASTY workaround but there is a known bug to fix https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
 pear upgrade
 gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
@@ -286,6 +291,9 @@ sed -i "s/a4/letter/" /var/www/html/avantfax/includes/local_config.php
 sed -i "s/root@localhost/$faxemail/" /var/www/html/avantfax/includes/local_config.php
 sed -i "s/root@localhost/$faxemail/" /var/www/html/avantfax/includes/config.php
 
+#fix avantfax cron user error in syslog by correcting cause
+sed -i 's/\/var\/www\/html\/avantfax/root\ \/var\/www\/html\/avantfax/g' /etc/cron.d/avantfax
+
 chmod 1777 /tmp
 chmod 555 /
 
@@ -316,7 +324,7 @@ echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo "Incredible FAX with IAXModem/Hylafax/Avantfax installation complete"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo " "
-echo "Avantfax is password-protected. Log in as admin with your passwd-master PW using"
+echo "Avantfax is password-protected. Log in as admin with password \"password\" using"
 echo "a browser pointed to http://serverIPaddress/avantfax or use the PIAF Admin GUI."
 echo " "
 echo "Fax detection is NOT supported. Incoming fax support requires a dedicated DID! "
