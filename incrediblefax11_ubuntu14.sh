@@ -269,7 +269,7 @@ JobReqNoCarrier: 180
 #ModemRate:      14400
 " >> /var/spool/hylafax/etc/config.ttyIAX0
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX0
-sed -i "s/0600/0666/g" /var/spool/hylafax/etc/config.ttyIAX0
+sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX0
 
 echo "
 JobReqNoAnswer:  180
@@ -277,7 +277,7 @@ JobReqNoCarrier: 180
 #ModemRate:      14400
 " >> /var/spool/hylafax/etc/config.ttyIAX1
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX1
-sed -i "s/0600/0666/g" /var/spool/hylafax/etc/config.ttyIAX1
+sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX1
 
 echo "
 JobReqNoAnswer:  180
@@ -285,7 +285,7 @@ JobReqNoCarrier: 180
 #ModemRate:      14400
 " >> /var/spool/hylafax/etc/config.ttyIAX2
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX2
-sed -i "s/0600/0666/g" /var/spool/hylafax/etc/config.ttyIAX2
+sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX2
 
 echo "
 JobReqNoAnswer:  180
@@ -293,7 +293,7 @@ JobReqNoCarrier: 180
 #ModemRate:      14400
 " >> /var/spool/hylafax/etc/config.ttyIAX3
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX3
-sed -i "s/0600/0666/g" /var/spool/hylafax/etc/config.ttyIAX3
+sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX3
 
 sed -i "s/a4/letter/" /var/www/html/avantfax/includes/local_config.php
 
