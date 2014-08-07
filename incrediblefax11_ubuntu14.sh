@@ -317,7 +317,7 @@ sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27bin\x27.DIRECTORY_SEPARATOR.\
 
 #fix permissions so avantfax can read hylafax received queue tifs
 chown -R asterisk:asterisk /var/www/html/avantfax
-chmod -R 0770 /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
+chmod -R 0777 /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
 chown -R asterisk:uucp /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
 chmod -R 777 /var/spool/hylafax/recvq/
 
