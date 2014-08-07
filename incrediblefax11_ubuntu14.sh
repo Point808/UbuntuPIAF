@@ -128,7 +128,7 @@ codec ulaw
 echo "
 [iax-fax$COUNT]
 type=friend
-host=127.0.0.1
+host=dynamic
 port=457$COUNT
 context=from-fax
 secret=$IAXPWD
