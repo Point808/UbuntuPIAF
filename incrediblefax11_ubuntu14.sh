@@ -95,11 +95,6 @@ cd /usr/share/ghostscript/current/Resource/Init
 mv Fontmap.GS Fontmap.GS.orig
 wget http://incrediblepbx.com/Fontmap.GS
 
-# Download the WebMin module for HylaFAX and install CGI.  User will have to manually install module themselves as noted in final notice
-cd $LOAD_LOC
-wget http://incrediblepbx.com/hylafax_mod-1.8.2.wbm.gz
-perl -MCPAN -e 'install CGI'
-
 # PEAR has a NASTY bug or something where the upgrader won't recognize .tgz files.  So, we run upgrade to download the files, rename them, and then install manually until they get their act together.
 # Bug tracker link https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
 pear upgrade
@@ -335,6 +330,11 @@ ln -s /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd.php
 cd /etc/default
 wget http://incrediblepbx.com/hylafax+
 chmod 755 hylafax+
+
+# Download the WebMin module for HylaFAX and install CGI.  User will have to manually install module themselves as noted in final notice
+cd $LOAD_LOC
+wget http://incrediblepbx.com/hylafax_mod-1.8.2.wbm.gz
+perl -MCPAN -e 'install CGI'
 
 # All done - notify user to reboot and exit!
 cd /root
