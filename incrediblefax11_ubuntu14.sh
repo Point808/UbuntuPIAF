@@ -311,6 +311,12 @@ sed -i 's/res\ =\&\ /res\ =\ /g' /var/www/html/avantfax/includes/SQL.php
 sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27sbin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
 sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27bin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
 
+#fix permissions so avantfax can read hylafax received queue tifs
+chown -R asterisk:asterisk /var/www/html/avantfax
+chmod -R 0770 /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
+chown -R asterisk:uucp /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
+chmod -R 777 /var/spool/hylafax/recvq/
+
 chmod 1777 /tmp
 chmod 555 /
 
