@@ -29,20 +29,11 @@
 # removed test for Incredible
 # Install Fax
 
-# josh.north@point808.com
-# 2014-08-04 - based on download from http://incrediblepbx.com/incrediblefax11.sh
-# Modified and validated it installs (mostly) correctly on a fresh Ubuntu Server 14.04LTS 32 bit
-# install with updates, reboot, and IncrediblePBX installed 
-# from http://incrediblepbx.com/incrediblepbx11.4.ubuntu14
-# Reboot and run as root and it *should* work, more or less
-# TODO - fix or add comments, do some sort of error catching to fail gracefully when compilation
-# breaks, fix sourceforge links (direct to a single mirror currently), fix prompts to specify 
-# versions requirements etc, maybe convert inittab to upstart to be "Ubuntufied"
-# ALSO TODO BEFORE RELEASE - Avantfax password setting not working right, and need link to Web UI in main
-# NOTES/gotchas - this uses bash instead of sh.  must run as root (not plain sudo unless you sudo -i,
-# and I have not tested that way thoroughly, even though it is more inline with Ubuntu practices)
-# last, for now, have not tested 64-bit or the webmin module to see if it needs hacking
+# Josh North 2014-08-07 josh.north@point808.com
+# Based on initial CentOS IncredibleFax script from Joe Roper and subsequent mods up to 11.3
+# This is customized for Ubuntu 14.04 LTS systems with a fresh install of IncrediblePBX 
 
+# Version control test - check and see if this is actually incrediblepbx 11.11, if not, exit
 VERSION=`cat /etc/pbx/.version`
 if [ -z "$VERSION" ]
 then
@@ -77,39 +68,63 @@ clear
 #Change passw0rd below for your MySQL asteriskuser password if you have changed it from the default.
 MYSQLASTERISKUSERPASSWORD=amp109
 
+#Set working directory for building
 LOAD_LOC=/usr/src/
 
-#make a random password for the iaxmodems - i know this isn't perfect but it is acceptable for me at this time, and far better than a hardcoded password in a script
+#Make a random password for the iaxmodems and put it in a temporary variable for use later
 IAXPWD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10`
 
+# Upgrade all installed packages first
+apt-get update && apt-get upgrade -y
+
+# Install all needed packages (all available at least) in one shot now
+apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice iaxmodem php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql gsfonts-x11 gsfonts-other fonts-freefont-ttf fonts-liberation xfonts-scalable fonts-freefont-otf t1-cyrillic cups-filters
+
+# Create some directories and files for later use
+mkdir -p /var/spool/hylafax/etc/
+mkdir /usr/local/lib/ghostscript
+touch /var/log/iaxmodem/iaxmodem.log
+touch /var/spool/hylafax/etc/FaxDispatch
+
+# Set up some links for later use
+ln -s /var/spool/hylafax/etc/ /etc/hylafax
+ln -s /usr/share/fonts/type1 /usr/local/lib/ghostscript/fonts
+
+# Fix up ghostscript fontmap
+cd /usr/share/ghostscript/current/Resource/Init
+mv Fontmap.GS Fontmap.GS.orig
+wget http://incrediblepbx.com/Fontmap.GS
+
+# Download the WebMin module for HylaFAX and install CGI.  User will have to manually install module themselves as noted in final notice
+cd $LOAD_LOC
+wget http://incrediblepbx.com/hylafax_mod-1.8.2.wbm.gz
+perl -MCPAN -e 'install CGI'
+
+# PEAR has a NASTY bug or something where the upgrader won't recognize .tgz files.  So, we run upgrade to download the files, rename them, and then install manually until they get their act together.
+# Bug tracker link https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
+pear upgrade
+gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
+pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
+
+# Get ready to build!
 cd $LOAD_LOC
 
-# upgrade first then install some dependencies
-apt-get update && apt-get upgrade -y
-apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice
-
-#Install Hylafax first so that the directories are in place
-mkdir -p /var/spool/hylafax/etc/
-ln -s /var/spool/hylafax/etc/ /etc/hylafax
+# Download, configure, build, and install HylaFAX
 wget http://prdownloads.sourceforge.net/hylafax/hylafax-5.5.5.tar.gz
 tar -zxvf hylafax*
 cd hylafax*
 ./configure --nointeractive
 make
 make install
-cp hfaxd/hfaxd.conf /var/spool/hylafax/etc/
-cp util/pagesizes /var/spool/hylafax/etc/
-cp etc/hosts.hfaxd /var/spool/hylafax/etc/
 
-#Install IAXMODEMS 0->3
-apt-get install -y iaxmodem
-touch /var/log/iaxmodem/iaxmodem.log
+# LOOP and install 4 IAXMODEMS 0->3
 cd $LOAD_LOC
 COUNT=0
 while [ $COUNT -lt 4 ]; do
        echo "Number = $COUNT"
        touch /etc/iaxmodem/iaxmodem-cfg.ttyIAX$COUNT
 	touch /var/log/iaxmodem/iaxmodem-cfg.ttyIAX$COUNT
+# For each device, set up the IAX config file
        echo "
 device /dev/ttyIAX$COUNT
 owner uucp:uucp
@@ -123,8 +138,7 @@ cidname Incredible PBX
 cidnumber +0000000000$COUNT
 codec ulaw
 " > /etc/iaxmodem/iaxmodem-cfg.ttyIAX$COUNT
-
-#Setup IAX Registrations
+# For each device, set up the Asterisk config file
 echo "
 [iax-fax$COUNT]
 type=friend
@@ -140,22 +154,20 @@ qualify=yes
 deny=0.0.0.0/0.0.0.0
 permit=127.0.0.1/255.255.255.0
 " >> /etc/asterisk/iax_custom.conf
-
-#Setup Hylafax Modems
+# For each device, set up the HylaFAX config file
 cp /usr/share/doc/iaxmodem/examples/config.ttyIAX /var/spool/hylafax/etc/config.ttyIAX$COUNT
-
+# For each device, set up to start faxgetty and log on boot
 echo "
 t$COUNT:23:respawn:/usr/local/sbin/faxgetty ttyIAX$COUNT > /var/log/iaxmodem/iaxmodem.log
 " >> /etc/inittab
-
+# For each device, set permissions on HylaFAX config
+chown uucp:uucp /var/spool/hylafax/etc/config.ttyIAX$COUNT
+#End of the loop stuff
 COUNT=$((COUNT + 1))
 done
+# LOOP END
 
-chown -R uucp:uucp /etc/iaxmodem/
-chown uucp:uucp /var/spool/hylafax/etc/config.ttyIAX*
-
-#Configure Hylafax
-touch /var/spool/hylafax/etc/FaxDispatch
+# This can use work to maybe add to one of the loops?
 echo "
 case "$DEVICE" in
    ttyIAX0) SENDTO=your@email.address; FILETYPE=pdf;; # all faxes received on ttyIAX0
@@ -165,10 +177,7 @@ case "$DEVICE" in
 esac
 " > /var/spool/hylafax/etc/FaxDispatch
 
-chown uucp:uucp /var/spool/hylafax/etc/FaxDispatch
-
 # Set up Dial Plan
-
 echo "
 [custom-fax-iaxmodem]
 exten => s,1,Answer
@@ -182,16 +191,17 @@ exten => s,n,Busy
 exten => s,n,Hangup
 " >> /etc/asterisk/extensions_custom.conf
 
-
+# Set up custom destination for fax in Asterisk and reload
 RESULT=`/usr/bin/mysql -uasteriskuser -p$MYSQLASTERISKUSERPASSWORD <<SQL
-
 use asterisk
 INSERT INTO custom_destinations 
 	(custom_dest, description, notes)
 	VALUES ('custom-fax-iaxmodem,s,1', 'Fax (Hylafax)', '');
 quit
 SQL`
+asterisk -rx "module reload"
 
+# Notify user that they will have to manually input data in a moment!
 clear
 echo "ATTN: We now are going to run the Hylafax setup script."
 echo "Except for your default area code which must be specified,"
@@ -199,18 +209,16 @@ echo "you can safely accept every default by pressing Enter."
 read -p "Press the Enter key to begin..."
 clear
 
-apt-get -y install php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql gsfonts-x11 gsfonts-other fonts-freefont-ttf fonts-liberation xfonts-scalable fonts-freefont-otf t1-cyrillic cups-filters
-mkdir /usr/local/lib/ghostscript
-ln -s /usr/share/fonts/type1 /usr/local/lib/ghostscript/fonts
-
+# Cross your fingers and run HylaFAX faxsetup.  It will require user input for the area code, all other can be left default with enter.
 faxsetup
 
-#Install Avantfax
+# Get ready to install AvantFAX
 cd $LOAD_LOC
 wget http://downloads.sourceforge.net/project/avantfax/avantfax-3.3.3.tgz
 tar zxfv $LOAD_LOC/avantfax*.tgz
 cd avantfax-3.3.3
-# Some sed commands to set the preferences
+
+# We need to set some preferences first and fix a package name error in their install script.
 sed -i 's/ROOTMYSQLPWD=/ROOTMYSQLPWD=passw0rd/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's/www-data/asterisk/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's/fax.mydomain.com/pbx.local/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
@@ -219,23 +227,18 @@ sed -i 's/HYLADIR=\/usr/HYLADIR=\/usr\/local/g'  $LOAD_LOC/avantfax-3.3.3/debian
 sed -i 's|./debian-prefs.txt|/usr/src/avantfax-3.3.3/debian-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
-# Avantfax guys let the debian-install script slide or something, awk to find config file is jacked, let's fix
-# thank God it's the only instance of 6 in the file, my sed sucks
+# This will need future work to narrow the sed regex.  We have to change their file to get the correct field name for the IAX modem config files.  If they fix it, our script will break!
 sed -i 's/6/4/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
-##JN this is a really NASTY NASTY workaround but there is a known bug to fix https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
-pear upgrade
-gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
-pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
-
+# Run AvantFAX installation now that we cleaned up what we can
 ./debian-install.sh
 
+# Cleanup unneccesary AvantFAX apache config and cleanup by restarting Apache and Asterisk
 rm /etc/apache2/sites-enabled/000-default
-
 service apache2 restart
-
 asterisk -rx "module reload"
 
+# Set email address for admin user in AvantFAX
 mysql -uroot -ppassw0rd avantfax <<EOF
 use avantfax;
 update UserAccount set username="admin" where uid=1;
@@ -246,23 +249,16 @@ update UserAccount set email="$faxemail" where uid=1;
 update Modems set contact="$faxemail" where devid>0;
 EOF
 
+# Set up custom extension for fax in Asterisk and reload
 echo "
 [from-fax]
 exten => _x.,1,Dial(local/\${EXTEN}@from-internal)
 exten => _x.,n,Hangup
 " >> /etc/asterisk/extensions_custom.conf
-
 sed -i 's|NVfaxdetect(5)|Goto(custom-fax-iaxmodem,s,1)|g' /etc/asterisk/extensions_custom.conf
-
 asterisk -rx "dialplan reload"
 
-cd $LOAD_LOC
-wget http://incrediblepbx.com/hylafax_mod-1.8.2.wbm.gz
-
-cd /usr/share/ghostscript/current/Resource/Init
-mv Fontmap.GS Fontmap.GS.orig
-wget http://incrediblepbx.com/Fontmap.GS
-
+# We need to tweak the HylaFAX modem configs for permissions, name, and some other variables.  Needs work - put into a loop to save time and code.
 echo "
 JobReqNoAnswer:  180
 JobReqNoCarrier: 180
@@ -270,7 +266,6 @@ JobReqNoCarrier: 180
 " >> /var/spool/hylafax/etc/config.ttyIAX0
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX0
 sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX0
-
 echo "
 JobReqNoAnswer:  180
 JobReqNoCarrier: 180
@@ -278,7 +273,6 @@ JobReqNoCarrier: 180
 " >> /var/spool/hylafax/etc/config.ttyIAX1
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX1
 sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX1
-
 echo "
 JobReqNoAnswer:  180
 JobReqNoCarrier: 180
@@ -286,7 +280,6 @@ JobReqNoCarrier: 180
 " >> /var/spool/hylafax/etc/config.ttyIAX2
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX2
 sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX2
-
 echo "
 JobReqNoAnswer:  180
 JobReqNoCarrier: 180
@@ -295,56 +288,56 @@ JobReqNoCarrier: 180
 sed -i "s/IAXmodem/IncredibleFax/g" /var/spool/hylafax/etc/config.ttyIAX3
 sed -i "s/0600/0777/g" /var/spool/hylafax/etc/config.ttyIAX3
 
+# AvantFAX has some directives that we want to modify, pagesize and email address.
 sed -i "s/a4/letter/" /var/www/html/avantfax/includes/local_config.php
-
 sed -i "s/root@localhost/$faxemail/" /var/www/html/avantfax/includes/local_config.php
 sed -i "s/root@localhost/$faxemail/" /var/www/html/avantfax/includes/config.php
 
-#fix avantfax cron user error in syslog by correcting cause
+# AvantFAX distributes a cron file that is missing the root user directive.  Let's fix it now.
 sed -i 's/\/var\/www\/html\/avantfax/root\ \/var\/www\/html\/avantfax/g' /etc/cron.d/avantfax
 
-#fix avantfax php errors with new version of php, also some hardcoded faxstat bugs i found
+# AvantFAX throws a crapload of PHP errors.  Fix what we can here and hush the rest.  Will need future work.
 sed -i 's/PEAR/@PEAR/g' /var/www/html/avantfax/includes/SQL.php
 sed -i 's/PEAR/@PEAR/g' /var/www/html/avantfax/includes/MDBO.php
 sed -i 's/db\ =\&\ MDB2/db\ =\ MDB2/g' /var/www/html/avantfax/includes/SQL.php
 sed -i 's/result\ =\&\ /result\ =\ /g' /var/www/html/avantfax/includes/SQL.php
 sed -i 's/res\ =\&\ /res\ =\ /g' /var/www/html/avantfax/includes/SQL.php
 
-#fugly fix for path issues being hardcoded.  even though we set path variables correctly they are either not expanding in avantfax script
-#or new php version is fouling ut up.  whatever.  room for improvement.
+# AvantFAX has some hardcoded paths in it's setup script.  For now it is easier to hard-code the paths since we have a relatively stable build environment.  Will need future work.
 sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27sbin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
 sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27bin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
 
-#fix permissions so avantfax can read hylafax received queue tifs
+# Tie up some loose ends with permissions and copy some other default HylaFAX config files
+chown uucp:uucp /var/spool/hylafax/etc/FaxDispatch
 chown -R asterisk:asterisk /var/www/html/avantfax
 chmod -R 0777 /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
 chown -R asterisk:uucp /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
 chmod -R 777 /var/spool/hylafax/recvq/
-
 chmod 1777 /tmp
 chmod 555 /
+chown -R uucp:uucp /etc/iaxmodem/
+cp hfaxd/hfaxd.conf /var/spool/hylafax/etc/
+cp util/pagesizes /var/spool/hylafax/etc/
+cp etc/hosts.hfaxd /var/spool/hylafax/etc/
 
-# needed for WebMin module
-perl -MCPAN -e 'install CGI'
-
+# Required to start faxgetty for modems on startup.  Need to "Ubuntu-ize" it to use Upstart in the future.  Also look at putting it in a loop with other items.
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX0' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX1' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX2' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX3' /etc/rc.local
 
-#use avantfax faxrcvd program instead of hylafax
+# We want to use AvantFAX programs instead of built-in HylaFAX programs
 mv /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd_old
 mv /var/spool/hylafax/bin/faxrcvd.php /var/spool/hylafax/bin/faxrcvd
 ln -s /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd.php
 
-# needed for /etc/cron.hourly/hylafax+
-##JN is this the right place? what's this doing?
+# This is in the old CentOS script.  I don't know what it is doing, for now I just put it here (instead of sysctl).
 cd /etc/default
 wget http://incrediblepbx.com/hylafax+
 chmod 755 hylafax+
 
+# All done - notify user to reboot and exit!
 cd /root
-
 clear
 echo " "
 echo " "
