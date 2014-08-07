@@ -325,6 +325,7 @@ sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX3' /etc/rc.local
 #use avantfax faxrcvd program instead of hylafax
 mv /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd_old
 mv /var/spool/hylafax/bin/faxrcvd.php /var/spool/hylafax/bin/faxrcvd
+ln -s /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd.php
 
 # needed for /etc/cron.hourly/hylafax+
 ##JN is this the right place? what's this doing?
