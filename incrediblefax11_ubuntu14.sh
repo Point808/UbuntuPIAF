@@ -294,6 +294,18 @@ sed -i "s/root@localhost/$faxemail/" /var/www/html/avantfax/includes/config.php
 #fix avantfax cron user error in syslog by correcting cause
 sed -i 's/\/var\/www\/html\/avantfax/root\ \/var\/www\/html\/avantfax/g' /etc/cron.d/avantfax
 
+#fix avantfax php errors with new version of php, also some hardcoded faxstat bugs i found
+sed -i 's/PEAR/@PEAR/g' /var/www/html/avantfax/includes/SQL.php
+sed -i 's/PEAR/@PEAR/g' /var/www/html/avantfax/includes/MDBO.php
+sed -i 's/db\ =\&\ MDB2/db\ =\ MDB2/g' /var/www/html/avantfax/includes/SQL.php
+sed -i 's/result\ =\&\ /result\ =\ /g' /var/www/html/avantfax/includes/SQL.php
+sed -i 's/res\ =\&\ /res\ =\ /g' /var/www/html/avantfax/includes/SQL.php
+
+#fugly fix for path issues being hardcoded.  even though we set path variables correctly they are either not expanding in avantfax script
+#or new php version is fouling ut up.  whatever.  room for improvement.
+sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27sbin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
+sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27bin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
+
 chmod 1777 /tmp
 chmod 555 /
 
