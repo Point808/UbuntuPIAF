@@ -79,6 +79,9 @@ MYSQLASTERISKUSERPASSWORD=amp109
 
 LOAD_LOC=/usr/src/
 
+#make a random password for the iaxmodems - i know this isn't perfect but it is acceptable for me at this time, and far better than a hardcoded password in a script
+IAXPWD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10`
+
 cd $LOAD_LOC
 
 # upgrade first then install some dependencies
@@ -115,6 +118,7 @@ port 457$COUNT
 refresh 300
 server 127.0.0.1
 peername iax-fax$COUNT
+secret $IAXPWD
 cidname Incredible PBX
 cidnumber +0000000000$COUNT
 codec ulaw
@@ -127,6 +131,7 @@ type=friend
 host=127.0.0.1
 port=457$COUNT
 context=from-fax
+secret=$IAXPWD
 requirecalltoken=no
 disallow=all
 allow=ulaw
