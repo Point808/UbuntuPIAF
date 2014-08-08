@@ -78,7 +78,7 @@ IAXPWD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10`
 apt-get update && apt-get upgrade -y
 
 # Install all needed packages (all available at least) in one shot now
-apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice iaxmodem php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql gsfonts-x11 gsfonts-other fonts-freefont-ttf fonts-liberation xfonts-scalable fonts-freefont-otf t1-cyrillic cups-filters
+apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice iaxmodem php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql gsfonts-x11 gsfonts-other fonts-freefont-ttf fonts-liberation xfonts-scalable fonts-freefont-otf t1-cyrillic cups-filters tesseract-ocr imagemagick
 
 # Create some directories and files for later use
 mkdir -p /var/spool/hylafax/etc/
@@ -297,17 +297,22 @@ sed -i 's/PEAR/@PEAR/g' /var/www/html/avantfax/includes/MDBO.php
 sed -i 's/db\ =\&\ MDB2/db\ =\ MDB2/g' /var/www/html/avantfax/includes/SQL.php
 sed -i 's/result\ =\&\ /result\ =\ /g' /var/www/html/avantfax/includes/SQL.php
 sed -i 's/res\ =\&\ /res\ =\ /g' /var/www/html/avantfax/includes/SQL.php
+sed -i 's/aff\ =\&\ /aff\ =\ /g' /var/www/html/avantfax/includes/SQL.php
 
 # AvantFAX has some hardcoded paths in it's setup script.  For now it is easier to hard-code the paths since we have a relatively stable build environment.  Will need future work.
 sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27sbin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
 sed -i "s/\$HYLAFAX_PREFIX.DIRECTORY_SEPARATOR.\x27bin\x27.DIRECTORY_SEPARATOR.\x27/\x27/g" /var/www/html/avantfax/includes/config.php
+sed -i 's/\/usr\/local\/bin\/tesseract/\/usr\/bin\/tesseract/g' /var/www/html/avantfax/includes/local_config.php
+sed -i 's/TIFF_TO_G4\t\t\t=\ false/TIFF_TO_G4\t\t\t=\ true/g' /var/www/html/avantfax/includes/local_config.php
 
 # Tie up some loose ends with permissions and copy some other default HylaFAX config files
 chown uucp:uucp /var/spool/hylafax/etc/FaxDispatch
+chown -R asterisk:uucp /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
+chmod -R 777 /var/spool/hylafax/recvq/
+chmod -R 777 /var/www/html/avantfax
 chown -R asterisk:asterisk /var/www/html/avantfax
 chmod -R 0777 /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
 chown -R asterisk:uucp /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
-chmod -R 777 /var/spool/hylafax/recvq/
 chmod 1777 /tmp
 chmod 555 /
 chown -R uucp:uucp /etc/iaxmodem/
@@ -322,9 +327,15 @@ sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX2' /etc/rc.local
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX3' /etc/rc.local
 
 # We want to use AvantFAX programs instead of built-in HylaFAX programs
-mv /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd_old
-mv /var/spool/hylafax/bin/faxrcvd.php /var/spool/hylafax/bin/faxrcvd
-ln -s /var/spool/hylafax/bin/faxrcvd /var/spool/hylafax/bin/faxrcvd.php
+rm /var/spool/hylafax/bin/faxrcvd*
+rm /var/spool/hylafax/bin/notify*
+rm /var/spool/hylafax/bin/dynconf*
+ln -s /var/www/html/avantfax/includes/faxrcvd.php /var/spool/hylafax/bin/faxrcvd.php
+ln -s /var/www/html/avantfax/includes/notify.php /var/spool/hylafax/bin/notify.php
+ln -s /var/www/html/avantfax/includes/dynconf.php /var/spool/hylafax/bin/dynconf.php
+rm /usr/share/misc/magic
+rm /usr/share/misc/magic.mgc
+ln -s /usr/share/file/magic* /usr/share/misc/
 
 # This is in the old CentOS script.  I don't know what it is doing, for now I just put it here (instead of sysctl).
 cd /etc/default
