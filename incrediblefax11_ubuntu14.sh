@@ -57,6 +57,10 @@ echo " "
 echo "Thereafter, accept ALL the defaults except for entering your local area code. "
 echo " "
 echo "NEVER RUN THIS SCRIPT MORE THAN ONCE ON THE SAME SYSTEM!!!"
+echo " "
+echo "For the best chance of success, ensure you have fully updated your system with"
+echo "apt-get update && apt-get upgrade -y BEFORE running this script. If you have "
+echo "not yet done this, press crtl-C NOW to exit!!!"
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 read -p "Press any key to continue or ctrl-C to exit"
 
@@ -73,20 +77,22 @@ MYSQLASTERISKUSERPASSWORD=amp109
 #Set working directory for building
 LOAD_LOC=/usr/src/
 
-#Make a random password for the iaxmodems and put it in a temporary variable for use later
+#Make a somewhat random password for the iaxmodems and put it in a temporary variable for use later
 IAXPWD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10`
 
 # Upgrade all installed packages first
 apt-get update && apt-get upgrade -y
 
-# Install all needed packages (all available at least) in one shot now
+# Install all needed packages (all available at least) in one shot now.  I could split it up by section
+# but why not knock it all out to save time.
 apt-get install -y mgetty mgetty-voice hylafax-server iaxmodem ghostscript gsfonts hylafax-client libgs9 libgs9-common libnetpbm10 libpaper-utils libpaper1 libtiff-tools netpbm transfig php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql tesseract-ocr imagemagick
 
 # Create some directories and files for later use
 touch /var/log/iaxmodem/iaxmodem.log
 
-# PEAR has a NASTY bug or something where the upgrader won't recognize .tgz files.  So, we run upgrade to download the files, rename them, and then install manually until they get their act together.
-# Bug tracker link https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
+# PEAR has a NASTY bug or something where the upgrader won't recognize .tgz files.  So, we run upgrade
+# to download the files, rename them, and then install manually until they get their act together.
+# Bug track https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
 pear upgrade
 gunzip /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tgz
 pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
@@ -144,7 +150,7 @@ COUNT=$((COUNT + 1))
 done
 # LOOP END
 
-# This can use work to maybe add to one of the loops?
+# Set up FaxDispatch.  Can't add to loop without convoluted sed awk crap that is over my head.  No big deal.
 echo "
 case "$DEVICE" in
    ttyIAX0) SENDTO=your@email.address; FILETYPE=pdf;; # all faxes received on ttyIAX0
@@ -154,7 +160,7 @@ case "$DEVICE" in
 esac
 " > /var/spool/hylafax/etc/FaxDispatch
 
-# Set up Dial Plan
+# Set up Dial Plan.  Again, we could probably loop but too much hassle for now.
 echo "
 [custom-fax-iaxmodem]
 exten => s,1,Answer
@@ -235,6 +241,7 @@ sed -i 's|NVfaxdetect(5)|Goto(custom-fax-iaxmodem,s,1)|g' /etc/asterisk/extensio
 asterisk -rx "dialplan reload"
 
 # We need to tweak the HylaFAX modem configs for permissions, name, and some other variables.  Needs work - put into a loop to save time and code.
+# BUT remember, this must run AFTER faxsetup command so it will have to be a second loop!!!
 echo "
 JobReqNoAnswer:  180
 JobReqNoCarrier: 180
