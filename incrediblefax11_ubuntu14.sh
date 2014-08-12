@@ -32,6 +32,8 @@
 # Josh North 2014-08-07 josh.north@point808.com
 # Based on initial CentOS IncredibleFax script from Joe Roper and subsequent mods up to 11.3
 # This is customized for Ubuntu 14.04 LTS systems with a fresh install of IncrediblePBX 
+# 2014-08-12 - Rewrite HylaFAX portion to install from binary repository as HylaFAX+ build
+# is not going to plan.  Fixed some other bugs.
 
 # Version control test - check and see if this is actually incrediblepbx 11.11, if not, exit
 VERSION=`cat /etc/pbx/.version`
@@ -78,22 +80,10 @@ IAXPWD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10`
 apt-get update && apt-get upgrade -y
 
 # Install all needed packages (all available at least) in one shot now
-apt-get install -y ghostscript gsfonts sharutils libtiff-tools mgetty mgetty-voice iaxmodem php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql gsfonts-x11 gsfonts-other fonts-freefont-ttf fonts-liberation xfonts-scalable fonts-freefont-otf t1-cyrillic cups-filters tesseract-ocr imagemagick
+apt-get install -y mgetty mgetty-voice hylafax-server iaxmodem ghostscript gsfonts hylafax-client libgs9 libgs9-common libnetpbm10 libpaper-utils libpaper1 libtiff-tools netpbm transfig php-mail-mime php-net-socket php-auth-sasl php-net-smtp php-mail php-mdb2 php-mdb2-driver-mysql tesseract-ocr imagemagick
 
 # Create some directories and files for later use
-mkdir -p /var/spool/hylafax/etc/
-mkdir /usr/local/lib/ghostscript
 touch /var/log/iaxmodem/iaxmodem.log
-touch /var/spool/hylafax/etc/FaxDispatch
-
-# Set up some links for later use
-ln -s /var/spool/hylafax/etc/ /etc/hylafax
-ln -s /usr/share/fonts/type1 /usr/local/lib/ghostscript/fonts
-
-# Fix up ghostscript fontmap
-cd /usr/share/ghostscript/current/Resource/Init
-mv Fontmap.GS Fontmap.GS.orig
-wget http://incrediblepbx.com/Fontmap.GS
 
 # PEAR has a NASTY bug or something where the upgrader won't recognize .tgz files.  So, we run upgrade to download the files, rename them, and then install manually until they get their act together.
 # Bug tracker link https://bugs.launchpad.net/ubuntu/+source/php5/+bug/1310552
@@ -103,14 +93,6 @@ pear upgrade /build/buildd/php5-5.5.9+dfsg/pear-build-download/*.tar
 
 # Get ready to build!
 cd $LOAD_LOC
-
-# Download, configure, build, and install HylaFAX
-wget http://prdownloads.sourceforge.net/hylafax/hylafax-5.5.5.tar.gz
-tar -zxvf hylafax*
-cd hylafax*
-./configure --nointeractive
-make
-make install
 
 # LOOP and install 4 IAXMODEMS 0->3
 cd $LOAD_LOC
@@ -218,7 +200,6 @@ sed -i 's/ROOTMYSQLPWD=/ROOTMYSQLPWD=passw0rd/g'  $LOAD_LOC/avantfax-3.3.3/debia
 sed -i 's/www-data/asterisk/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's/fax.mydomain.com/pbx.local/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's/INSTDIR=\/var\/www\/avantfax/INSTDIR=\/var\/www\/html\/avantfax/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
-sed -i 's/HYLADIR=\/usr/HYLADIR=\/usr\/local/g'  $LOAD_LOC/avantfax-3.3.3/debian-prefs.txt
 sed -i 's|./debian-prefs.txt|/usr/src/avantfax-3.3.3/debian-prefs.txt|g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 sed -i 's/apache2.2-common/apache2-data/g'  $LOAD_LOC/avantfax-3.3.3/debian-install.sh
 
@@ -316,9 +297,6 @@ chown -R asterisk:uucp /var/www/html/avantfax/tmp /var/www/html/avantfax/faxes
 chmod 1777 /tmp
 chmod 555 /
 chown -R uucp:uucp /etc/iaxmodem/
-cp hfaxd/hfaxd.conf /var/spool/hylafax/etc/
-cp util/pagesizes /var/spool/hylafax/etc/
-cp etc/hosts.hfaxd /var/spool/hylafax/etc/
 
 # Required to start faxgetty for modems on startup.  Need to "Ubuntu-ize" it to use Upstart in the future.  Also look at putting it in a loop with other items.
 sed -i '$i/usr/local/sbin/faxgetty -D ttyIAX0' /etc/rc.local
