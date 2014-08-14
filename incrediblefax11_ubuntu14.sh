@@ -340,6 +340,7 @@ cd /var/www/html/admin/modules
 git clone https://github.com/joshnorth/FreePBX-AvantFAX avantfax
 chown -R asterisk:asterisk avantfax
 amportal a ma install avantfax
+amportal a r
 
 # All done - notify user to reboot and exit!
 cd /root
