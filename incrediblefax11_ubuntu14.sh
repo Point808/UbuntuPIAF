@@ -34,6 +34,7 @@
 # This is customized for Ubuntu 14.04 LTS systems with a fresh install of IncrediblePBX 
 # 2014-08-12 - Rewrite HylaFAX portion to install from binary repository as HylaFAX+ build
 # is not going to plan.  Fixed some other bugs.
+# Added steps to install a custom FreePBX/AvantFAX link module that I wrote so that users can easily access AvantFAX ui
 
 # Version control test - check and see if this is actually incrediblepbx 11.11, if not, exit
 VERSION=`cat /etc/pbx/.version`
@@ -331,6 +332,14 @@ chmod 755 hylafax+
 cd $LOAD_LOC
 wget http://incrediblepbx.com/hylafax_mod-1.8.2.wbm.gz
 perl -MCPAN -e 'install CGI'
+
+# Download and install git so that we can clone the FreePBX module for the AvantFAX link.  Maybe later FreePBX or someone
+# will modify and include the module or make a generic web link module but for now this was fastest/easiest
+apt-get install -y git
+cd /var/www/html/admin/modules
+git clone https://github.com/joshnorth/FreePBX-AvantFAX avantfax
+chown -R asterisk:asterisk avantfax
+amportal a ma install avantfax
 
 # All done - notify user to reboot and exit!
 cd /root
