@@ -342,6 +342,11 @@ chown -R asterisk:asterisk avantfax
 amportal a ma install avantfax
 amportal a r
 
+# Download the AvantFAX password change script
+cd /root
+wget --no-check-certificate https://raw.githubusercontent.com/joshnorth/UbuntuPIAF/master/avantfax-pw-change
+chmod +x avantfax-pw-change
+
 # All done - notify user to reboot and exit!
 cd /root
 clear
