@@ -82,7 +82,12 @@ LOAD_LOC=/usr/src/
 IAXPWD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10`
 
 # Upgrade all installed packages first
-apt-get update && apt-get upgrade -y
+#apt-get update && apt-get upgrade -y
+# REMOVED above upgrade line - this is a bad idea because now we don;t know what versions people have installed
+# HOWEVER - leaving this line currently breaks working installations, and we can;t have that.
+# FUTURE - I think we may have to go the source-installation route for production stability.  Depending on untested
+# packages is great for bleeding-edge but isn't going to cut it for serious consideration as a stable build.
+apt-get update
 
 # Install all needed packages (all available at least) in one shot now.  I could split it up by section
 # but why not knock it all out to save time.
