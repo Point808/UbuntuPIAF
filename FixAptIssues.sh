@@ -9,4 +9,5 @@ sed -i 's/invoke-rc.d udev restart/service udev restart/g' /var/lib/dpkg/info/ud
 fi
 
 echo "All done.  You should *probably* reboot your system now since we are messing with important system services."
-exit
+read -p "Press any key to reboot or ctrl-C to exit"
+reboot
