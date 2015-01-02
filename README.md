@@ -22,18 +22,18 @@ Installation:
 2. Run through the IncrediblePBX (http://nerdvittles.com/?p=9713) install and reboot  
 3. Login as root via SSH and run the PIAF updater when asked - this fixes a reboot and MySQL glitch. *YOU MUST REBOOT HERE*  
 4. Install IncredibleFax, inserting your email address when requested. Press Enter for all other questions to accept the default options.  
-'''
+```
 cd /root  
 wget --no-check-certificate https://raw.githubusercontent.com/joshnorth/UbuntuPIAF/master/incrediblefax11_ubuntu14.sh  
 chmod +x incrediblefax11_ubuntu14.sh  
 ./incrediblefax11_ubuntu14.sh  
 reboot  
-'''
+```
 
 *YOU MUST REBOOT HERE*
 
 Issues:  
 1. Your default login should be admin/password. If you have problems with this, go to your root directory and run the following:  
-'''
+```
 ./avantfax-pw-change
-'''  
+```
