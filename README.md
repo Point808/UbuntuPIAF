@@ -23,7 +23,7 @@ Print to fax with any HylaFAX/AvantFAX addons
 4. Install IncredibleFax, inserting your email address when requested. Press Enter for all other questions to accept the default options.  
 ```
 cd /root  
-wget --no-check-certificate https://raw.githubusercontent.com/joshnorth/UbuntuPIAF/master/incrediblefax11_ubuntu14.sh  
+wget --no-check-certificate https://git.point808.com/Point808/UbuntuPIAF/raw/master/incrediblefax11_ubuntu14.sh  
 chmod +x incrediblefax11_ubuntu14.sh  
 ./incrediblefax11_ubuntu14.sh  
 reboot  
