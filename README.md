@@ -3,6 +3,7 @@
 Josh North - josh.north@point808.com  
 Collection of scripts for use with Asterisk/PIAF/IncrediblePBX on Ubuntu 14.04 LTS.  Some scripts are just modified Nerdvittles CentOS scripts, some are homebrew.  Will be adding more I have created later.  
 Forum thread: http://pbxinaflash.com/community/index.php?threads/wip-incrediblefax-for-ubuntu-incrediblepbx-install.15386/  
+*** This repository lives at https://git.point808.com and pushes to github on update.
 
 ### Working: ###
 Ubuntu 14.04 (i386) and Ubuntu 14.04.1 (amd64) default installs per the NV post on Ubuntu and IncrediblePBX at (http://nerdvittles.com/?p=9713).  
